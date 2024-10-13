@@ -1,0 +1,55 @@
+from abc import ABC, abstractmethod
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from tqdm import tqdm
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+import time
+
+
+class BaseScraper(ABC):
+    def __init__(self, urls=None):
+        self.urls = urls
+        try:  # Run in headless mode
+            self.service = Service(executable_path='chromedriver.exe')
+            self.driver = webdriver.Chrome(service=self.service)
+        except Exception as e:
+            print(f"Đã xảy ra lỗi khi khởi tạo Selenium WebDriver: {e}")
+
+    @abstractmethod
+    def get_product_info(self, url):
+        """
+        Get product information from the given URL.
+        """
+        pass
+
+    def parse(self):
+        """Parse product information from the fetched URLs."""
+        products = []
+        for index, url in enumerate(tqdm(self.urls, desc="Parsing products")):
+            product = self.get_product_info(url)
+            if product is not None:
+                products.append(product)
+        return products
+
+    def _get_element(self, selector, by=By.CLASS_NAME):
+        """Get element by selector with specified method."""
+        try:
+            return WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((by, selector))
+            )
+        except Exception as e:
+            print(f"====> [WARNING] Selector `{selector}` not found")
+            return None
+
+    def scroll_and_click(self, element):
+        """Scroll to an element and click it using JavaScript."""
+        if element:
+            self.driver.execute_script(
+                "arguments[0].scrollIntoView(true);", element)
+            time.sleep(1)  # Optional wait
+            self.driver.execute_script("arguments[0].click();", element)
+
+    def close(self):
+        self.driver.quit()
