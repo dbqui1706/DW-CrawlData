@@ -1,2 +1,4 @@
 selenium
 chromium-driver
+mysql-connector-python
+python-dotenv

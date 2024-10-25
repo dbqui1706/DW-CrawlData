@@ -28,6 +28,8 @@ class BaseScraper(ABC):
         """Parse product information from the fetched URLs."""
         products = []
         for index, url in enumerate(tqdm(self.urls, desc="Parsing products")):
+            # if index == 2:
+            #     break
             product = self.get_product_info(url)
             if product is not None:
                 products.append(product)
@@ -36,7 +38,7 @@ class BaseScraper(ABC):
     def _get_element(self, selector, by=By.CLASS_NAME):
         """Get element by selector with specified method."""
         try:
-            return WebDriverWait(self.driver, 5).until(
+            return WebDriverWait(self.driver, 0.5).until(
                 EC.presence_of_element_located((by, selector))
             )
         except Exception as e:
