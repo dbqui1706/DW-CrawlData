@@ -13,6 +13,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     store = args.store
+    scraper = None
     if store == 'phongvu':
         sitemap_url = "https://phongvu.vn/sitemap_collection_products_4-laptop.xml"
         sitemap_crawler = Crawler(sitemap_url=sitemap_url)
@@ -25,13 +26,38 @@ if __name__ == '__main__':
         sitemap_crawler = Crawler(sitemap_url=sitemap_url)
         urls = sitemap_crawler.urls
 
-        cellphones = FPTScraper(urls=urls)
-        products = cellphones.parse()
+        scraper = FPTScraper(urls=urls)
+        products = scraper.parse()
+
+        # lấy những url lỗi
+        products_error = []
+        if len(scraper.URL_SERE) > 0:
+            print(f"===> Parsing url ERROR {len(scraper.URL_SERE)}")
+            for url in scraper.URL_SERE:
+                # Remove url error from products
+                # 1. Lấy product có url lỗi trong products
+                product = next(
+                    (p for p in products if p['source'] == url), None)
+                if product is not None:
+                    # 2. Xóa product có url lỗi ra khỏi products
+                    products.remove(product)
+                    print(f"Removed product from products: {product['name']}")
+
+                # Lưu lại url lỗi để sửa sau
+                products_error.append(scraper.get_product_info(url))
+
+        products.extend(products_error)
 
     writer = CSVWriter()
     # write file name contain
-    current_dir = os.getcwd()  # Thư mục hiện tại
-    data_dir = os.path.join(current_dir, "data")  # Thư mục con "data"
+    current_dir = os.getcwd()
+    data_dir = None
+    if store == 'fpt':
+        data_dir = os.path.join(current_dir, "data/fpt")
+    elif store == 'phongvu':
+        data_dir = os.path.join(
+            current_dir, "data/phongvu")
+
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = os.path.join(data_dir, f"{store}_{current_time}.csv")
 

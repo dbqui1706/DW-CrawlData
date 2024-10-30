@@ -3,6 +3,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from selenium.common.exceptions import StaleElementReferenceException
 
 
 class FPTScraper(BaseScraper):
@@ -11,6 +12,7 @@ class FPTScraper(BaseScraper):
 
     def __init__(self, urls=None):
         super().__init__(urls)
+        self.URL_SERE = []
 
     def filter_url(self, url):
         if url.startswith('https://cellphones.com.vn/macbook-'):
@@ -18,15 +20,16 @@ class FPTScraper(BaseScraper):
         return url.startswith('https://cellphones.com.vn/laptop-')
 
     def get_product_info(self, url):
+        product = {}
+        # Use a function to fetch elements with retry on StaleElementReferenceException
         try:
             self.driver.get(url)
             WebDriverWait(self.driver, 20).until(lambda driver: driver.execute_script(
                 "return document.readyState") == "complete")
             product = {}
-
-            product['id'] = self._get_element(
-                '//div[@class="w-fit"]/span',
-                by=By.XPATH).text
+            id_element = self._get_element(
+                '//div[@class="w-fit"]/span', by=By.XPATH)
+            product['id'] = id_element.text if id_element else ""
 
             product['source'] = url
 
@@ -35,14 +38,15 @@ class FPTScraper(BaseScraper):
 
             product['name'] = h1_element.text if h1_element else ""
 
-            product['brand'] = None
+            product['brand'] = ""
             for word in h1_element.text.lower().split(' '):
                 if word in self.categories:
                     product['brand'] = word.capitalize()
                     break
 
-            product['img-src'] = self._get_element(
+            img_src = self._get_element(
                 'swiper-zoom-container').find_element(By.TAG_NAME, 'img').get_attribute('src')
+            product['img-src'] = img_src if img_src else ""
 
             # x_path_available = '//div[contains(@class, "flex items-center justify-between bg-yellow-yellow-2")]//p[@class="text-yellow-yellow-8 h6-semibold"]'
             # available_element = self._get_element(
@@ -56,13 +60,27 @@ class FPTScraper(BaseScraper):
 
             retail_price = self._get_element(
                 '//*[@id="tradePrice"]/div[1]/div[1]/div[1]/span[1]', By.XPATH)
-            product['retail-price'] = retail_price.text.replace(
-                "₫", "").strip() if retail_price is not None else "0"
+            if retail_price is not None:
+                if 'Điểm thưởng' in retail_price.text.strip():
+                    product['retail-price'] = "0"
+                else:
+                    product['retail-price'] = retail_price.text.replace(
+                        "₫", "").strip() if retail_price is not None else "0"
+            else:
+                product['retail-price'] = "0"
 
             sale = self._get_element(
                 '//*[@id="tradePrice"]/div[1]/div[1]/div[1]/span[2]', By.XPATH)
-            product['sale'] = sale.text.replace(
-                "%", "").strip() if sale is not None else "0"
+            if sale is not None:
+                product['sale'] = sale.text.replace("%", "").strip()
+            else:
+                product['sale'] = "0"
+
+            stop_bussines = self._get_element(
+                "//p[contains(@class, 'absolute') and contains(@class, 'left-4') and contains(@class, '-tracking-[.32px]') and contains(@class, 'text-textOnWhitePrimary') and contains(@class, 'h5-16-semibold')]", By.XPATH)
+            out_product = self._get_element('text-yellow-yellow-8')
+            product['available'] = False if (
+                stop_bussines or out_product) is not None else True
             # product['Trả góp'] = self._get_element(
             #     '//*[@id="tradePrice"]/div[1]/div[3]/span[2]', By.XPATH).text
 
@@ -103,13 +121,15 @@ class FPTScraper(BaseScraper):
             return product
         except Exception as e:
             print(f"An error occurred while fetching product information: {e}")
+            self.URL_SERE.append(url)
             return {
                 'id': '',
+                'source': url,
                 'name': '',
                 'brand': '',
                 'img-src': '',
-                'latest-price': '',
-                'retail-price': '',
-                'available': '',
-                'sale': '',
+                'latest-price': 0,
+                'retail-price': 0,
+                'sale': 0,
+                'available': False,
             }

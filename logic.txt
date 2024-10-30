@@ -1,0 +1,60 @@
+def insert_to_tb_laptop_daily(self):
+    # 1. Kết nối đến DB CONTROL_LAPTOP
+
+    # 2. Lấy các cửa hàng từ bảng config_file
+    while True:
+        # 2.1 Lấy file mới nhất trong ngày từ trường source_folder_location
+        file_info = get_latest_file(config_id)  # Giả sử có hàm lấy file mới nhất
+        if not file_info:
+            # Nếu không có file nào, chuyển sang cửa hàng khác
+            continue
+
+        # Lấy đường dẫn file và ID của config_file
+        file_path = file_info['file_path']
+        config_id = file_info['config_id']
+
+        # 2.2 Kiểm tra log đã tồn tại cho config_file trong ngày chưa
+        log_exists = check_log_exists_today(config_id)  # Giả sử có hàm kiểm tra log
+        if not log_exists:
+            # Nếu chưa, tạo log mới với trạng thái PENDING
+            create_log(config_id, status='PENDING')
+
+        # 2.3 Kiểm tra trạng thái của log
+        log_status = get_log_status(config_id)
+        if log_status != 'PENDING':
+            # Nếu trạng thái không phải PENDING, quay lại bước 2.1 để kiểm tra file mới
+            continue
+
+        # 2.4 Thay đổi trạng thái thành IN_PROGRESS khi bắt đầu quá trình
+        update_log_status(config_id, status='IN_PROGRESS')
+
+        try:
+            # 2.5 Kết nối đến DB STAGING
+            # 2.6 Thực hiện việc insert dữ liệu vào bảng laptop_daily từ file
+
+            for row in file_data:  # Giả sử file_data là iterator qua từng dòng trong file
+                # Kiểm tra sự tồn tại của dòng
+                record = check_existing_record(row)  # Hàm kiểm tra record
+
+                if record and data_unchanged(record, row):
+                    # 2.6.1 Nếu đã tồn tại và không có gì thay đổi
+                    continue
+                elif not record:
+                    # 2.6.2 Nếu chưa tồn tại, Insert vào laptop_daily và log INSERT
+                    insert_into_laptop_daily(row)
+                    log_action(config_id, action='INSERT', data=row)
+                else:
+                    # 2.6.3 Nếu tồn tại nhưng có thay đổi, Update và log UPDATE
+                    update_laptop_daily(row)
+                    log_action(config_id, action='UPDATE', data=row)
+
+        except Exception as e:
+            # Nếu có lỗi, update log với trạng thái FAILED và ghi lại số dòng đã xử lý
+            update_log_status(config_id, status='FAILED', row_count=processed_rows)
+            continue  # Chuyển sang xử lý file khác nếu có lỗi
+
+        finally:
+            # 2.7 Kiểm tra trạng thái để cập nhật trạng thái cuối cùng
+            final_status = 'COMPLETED' if not e else 'FAILED'
+            update_log_status(config_id, status=final_status, row_count=processed_rows)
+

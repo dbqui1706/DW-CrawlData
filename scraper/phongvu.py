@@ -20,7 +20,7 @@ class PhongVuScraper(BaseScraper):
             sku_div = self._get_element('css-1f5a6jh')
             product['id'] = "sku." + sku_div.text.split('SKU:')[-1].strip()
 
-            product['srouce'] = url
+            product['source'] = url
 
             product['name'] = self._get_element('css-nlaxuc').text
 
@@ -48,6 +48,15 @@ class PhongVuScraper(BaseScraper):
                 product['retail-price'] = '0'
 
                 product['sale'] = '0'
+
+            available = self._get_element('css-fdtrln')
+            if available:
+                text = available.text.lower()
+                product['available'] = True if "mua ngay" in text else False
+            else:
+                product['available'] = False
+
+            # print(product)
             # # Scroll down and click to open the modal
             # self.driver.execute_script("window.scrollBy(0, 2000)", "")
             # detail_info_product = WebDriverWait(self.driver, 20).until(
@@ -80,4 +89,14 @@ class PhongVuScraper(BaseScraper):
         except Exception as e:
             print(
                 f"===> [ERROR] Đã xảy ra lỗi khi lấy thông tin sản phẩm từ `{url}`: {e}")
-            return None
+            return {
+                'id': '',
+                'source': url,
+                'name': '',
+                'brand': '',
+                'img-src': '',
+                'latest-price': 0,
+                'retail-price': 0,
+                'sale': 0,
+                'available': False,
+            }
