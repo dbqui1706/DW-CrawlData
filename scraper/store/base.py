@@ -5,6 +5,7 @@ from tqdm import tqdm
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 
@@ -12,8 +13,10 @@ class BaseScraper(ABC):
     def __init__(self, urls=None):
         self.urls = urls
         try:  # Run in headless mode
-            self.service = Service(executable_path='chromedriver.exe')
-            self.driver = webdriver.Chrome(service=self.service)
+            # Sử dụng ChromeDriverManager để lấy đường dẫn đến chromedriver.exe
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service)
+            print("Khởi tạo driver thành công")
         except Exception as e:
             print(f"Đã xảy ra lỗi khi khởi tạo Selenium WebDriver: {e}")
 

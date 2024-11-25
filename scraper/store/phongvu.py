@@ -2,7 +2,6 @@ from selenium.webdriver.common.by import By
 from .base import BaseScraper
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
 
 
 class PhongVuScraper(BaseScraper):
@@ -19,7 +18,7 @@ class PhongVuScraper(BaseScraper):
             product = {}
             sku_div = self._get_element('css-1f5a6jh')
             product['id'] = "sku." + sku_div.text.split('SKU:')[-1].strip()
-
+            product['store'] = "PV"
             product['source'] = url
 
             product['name'] = self._get_element('css-nlaxuc').text
@@ -56,34 +55,6 @@ class PhongVuScraper(BaseScraper):
             else:
                 product['available'] = False
 
-            # print(product)
-            # # Scroll down and click to open the modal
-            # self.driver.execute_script("window.scrollBy(0, 2000)", "")
-            # detail_info_product = WebDriverWait(self.driver, 20).until(
-            #     EC.element_to_be_clickable(
-            #         (By.XPATH, "//*[@id='__next']/div/div/div/div/div[5]/div[2]/div/div[4]/div/div[2]/div[3]/div"))
-            # )
-            # self.scroll_and_click(detail_info_product)
-
-            # # Wait for modal to display and fetch info
-            # modal_element = WebDriverWait(self.driver, 20).until(
-            #     EC.presence_of_element_located(
-            #         (By.CSS_SELECTOR, "div.css-9s7q9u"))
-            # )
-            # info_elements = modal_element.find_elements(
-            #     By.CSS_SELECTOR, "div.css-1i3ajxp")
-
-            # for info in info_elements:
-            #     try:
-            #         label = info.find_element(
-            #             By.CSS_SELECTOR, "div[style*='flex: 2 1 0%']").text
-            #         value = info.find_element(
-            #             By.CSS_SELECTOR, "div[style*='flex: 3 1 0%']").text
-            #         product[label] = value
-            #     except Exception as e:
-            #         print(f"[ERROR] Lỗi khi lấy thông tin từ modal: {e}")
-            #         continue
-
             return product
 
         except Exception as e:
@@ -91,6 +62,7 @@ class PhongVuScraper(BaseScraper):
                 f"===> [ERROR] Đã xảy ra lỗi khi lấy thông tin sản phẩm từ `{url}`: {e}")
             return {
                 'id': '',
+                'store': 'PV',
                 'source': url,
                 'name': '',
                 'brand': '',

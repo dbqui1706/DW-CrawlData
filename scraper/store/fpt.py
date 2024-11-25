@@ -30,7 +30,7 @@ class FPTScraper(BaseScraper):
             id_element = self._get_element(
                 '//div[@class="w-fit"]/span', by=By.XPATH)
             product['id'] = id_element.text if id_element else ""
-
+            product['store'] = "FPT"
             product['source'] = url
 
             h1_element = self._get_element(
@@ -124,6 +124,7 @@ class FPTScraper(BaseScraper):
             self.URL_SERE.append(url)
             return {
                 'id': '',
+                'store': 'FPT',
                 'source': url,
                 'name': '',
                 'brand': '',

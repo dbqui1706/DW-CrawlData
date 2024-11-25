@@ -1,6 +1,6 @@
 from crawler import Crawler
-from scraper.phongvu import PhongVuScraper
-from scraper.fpt import FPTScraper
+from store.phongvu import PhongVuScraper
+from store.fpt import FPTScraper
 from writer.csv_writer import CSVWriter
 import datetime
 import argparse
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     store = args.store
     scraper = None
-    if store == 'phongvu':
+    if store == 'pv':
         sitemap_url = "https://phongvu.vn/sitemap_collection_products_4-laptop.xml"
         sitemap_crawler = Crawler(sitemap_url=sitemap_url)
         urls = sitemap_crawler.get_urls()
@@ -50,16 +50,14 @@ if __name__ == '__main__':
 
     writer = CSVWriter()
     # write file name contain
-    current_dir = os.getcwd()
     data_dir = None
     if store == 'fpt':
-        data_dir = os.path.join(current_dir, "data/fpt")
-    elif store == 'phongvu':
-        data_dir = os.path.join(
-            current_dir, "data/phongvu")
+        data_dir = "D:\\dw\\data\\fpt"
+    elif store == 'pv':
+        data_dir = "D:\\dw\\data\\pv"
 
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = os.path.join(data_dir, f"{store}_{current_time}.csv")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d")
+    filename = os.path.join(data_dir, f"{store.upper()}_{current_time}.csv")
 
     # Kiểm tra thư mục tồn tại, nếu không thì tạo mới
     os.makedirs(data_dir, exist_ok=True)
