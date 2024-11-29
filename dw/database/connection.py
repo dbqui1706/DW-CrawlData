@@ -25,8 +25,12 @@ class DBConnection:
             allow_local_infile=True
         )
         # check connection is established
-
-        return db
+        if db.is_connected:
+            print(f"MySQL database connected")
+            return db
+        else:
+            print(f"MySQL database connection failed")
+            return None
 
     def close_connection(self):
         self.db.close()

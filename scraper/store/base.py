@@ -31,8 +31,8 @@ class BaseScraper(ABC):
         """Parse product information from the fetched URLs."""
         products = []
         for index, url in enumerate(tqdm(self.urls, desc="Parsing products")):
-            # if index == 50:
-            #     break
+            if index == 50:
+                break
             product = self.get_product_info(url)
             if product is not None:
                 products.append(product)
