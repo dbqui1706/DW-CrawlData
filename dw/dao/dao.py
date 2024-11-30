@@ -55,17 +55,18 @@ class DaoConfiguration:
             cursor.execute(query)
             self.connection.commit()
             print(f"Data loaded successfully from {source}")
+            return True
         except Exception as e:
             print(f"Error in load_data_from_file_to_table(): {e}")
-            self.update_status_code("EF", config['id'])
-            self.connection.commit()
+            self.connection.rollback()
+            return False
         finally:
             cursor.close()
 
     def truncate_tb_tmp_staging(self):
         # TODO: truncate dữ liệu trong bảng staging
 
-        query = "TRUNCATE TABLE staging.tb_temp_staging;"
+        query = f"TRUNCATE TABLE staging.tb_temp_staging;"
         try:
             cursor = self.connection.cursor(dictionary=True)
             cursor.execute(query)
@@ -76,10 +77,10 @@ class DaoConfiguration:
         finally:
             cursor.close()
 
-    def truncate_tb_staging(self):
+    def truncate_tb_staging(self, config):
         cursor = self.connection.cursor(dictionary=True)
 
-        query = "TRUNCATE TABLE staging.tb_staging;"
+        query = f"TRUNCATE TABLE {config['dest_tb_staging']};"
 
         try:
             cursor.execute(query)
@@ -95,21 +96,15 @@ class DaoConfiguration:
         cursor = self.connection.cursor(dictionary=True)
         try:
             procedure_name = "staging.insert_data_staging_from_temp"
-            cursor.callproc(procedure_name)
+            cursor.callproc(procedure_name, (config['dest_tb_staging'],))
 
             # Commit thay đổi (nếu cần)
             self.connection.commit()
-
-            # Cập nhật status code = T1 nếu thành công
-            self.update_status_code('T1', config['id'])
-
+            return True
         except Exception as e:
             print(f"Error in transform_data_to_staging(): {e}")
             self.connection.rollback()
-
-            # Cập nhật status code = ER nếu lỗi
-            self.update_status_code("EF", config['id'])
-            self.connection.commit()
+            return False
         finally:
             cursor.close()
 
@@ -122,7 +117,6 @@ class DaoConfiguration:
             cursor.callproc(procedure_name, (id, status))
             # commit thay đổi
             self.connection.commit()
-            print(f"Status code '{status}' updated successfully")
         except Exception as e:
             self.connection.rollback()
             print(f"Error in update_status_code(): {e}")
@@ -155,19 +149,16 @@ class DaoConfiguration:
         # Gọi stored procedure
         try:
             procedure_name = "dw.update_or_insert_dim_product"
-            cursor.callproc(procedure_name)
+            cursor.callproc(procedure_name, (config['dest_tb_staging'],))
             # Commit thay đổi
             self.connection.commit()
 
-            return self.get_status_code(config)
+            return True
         except Exception as e:
             print(f"Error in transform_data_to_dw(): {e}")
             self.connection.rollback()
 
-            # Cập nhật status code = ER nếu lỗi
-            self.update_status_code("EF", config['id'])
-            self.connection.commit()
-            return self.get_status_code(config)
+            return False
         finally:
             cursor.close()
 
@@ -178,20 +169,36 @@ class DaoConfiguration:
         try:
             procedure_name = "dw.load_fact_product"
             cursor = self.connection.cursor(dictionary=True)
-            cursor.callproc(procedure_name)
+            cursor.callproc(procedure_name, (config['dest_tb_staging'],))
             # Commit thay đổi
             self.connection.commit()
 
-            # Nếu thành công thì update status code = "T2"
-            self.update_status_code("T2", config)
-
-            return self.get_status_code(config)
+            return True
         except Exception as e:
             print(f"Error in load_data_to_fact(): {e}")
             self.connection.rollback()
-            # Cập nhật status code = ER nếu lỗi
-            self.update_status_code("EF", config['id'])
-            self.connection.commit()
-            return self.get_status_code(config)
+            return False
+        finally:
+            cursor.close()
+
+    def get_configuration_by_id(self, config_id):
+        cursor = self.connection.cursor(dictionary=True)
+
+        query = f"""
+            SELECT l.id, l.id_config, c.store, l.status_code, l.created_at, c.source_folder_location, 
+            c.dest_tb_dw, c.dest_tb_staging, l.file_name
+            FROM control.tb_config_file c 
+            JOIN control.tb_log l on c.id = l.id_config
+            WHERE l.id = %s;
+            ORDER BY l.id DESC
+            LIMIT 2;
+        """
+        try:
+            cursor.execute(query, (config_id,))
+            result = cursor.fetchone()
+            return result if result else None
+        except Exception as e:
+            print(f"Error in get_configuration_by_id(): {e}")
+            return None
         finally:
             cursor.close()

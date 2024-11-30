@@ -3,6 +3,7 @@ import mysql.connector
 import mysql.connector as connector
 from dotenv import load_dotenv
 import os
+from utils.utils import send_email
 
 
 class DBConnection:
@@ -30,6 +31,8 @@ class DBConnection:
             return db
         else:
             print(f"MySQL database connection failed")
+            send_email(email=os.getenv('EMAIL'), config_id=-1, stage='connection',
+                       error_message='MySQL database connection failed')
             return None
 
     def close_connection(self):
