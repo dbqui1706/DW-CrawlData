@@ -50,25 +50,25 @@ def main():
             if len(products) == 0:
                 continue
 
-            # 6. Kiểm tra số lượng sản phẩm, nếu ít hơn 100 thì tiếp tục cào thêm
-            if len(products) < 100:
-                print(f"Số lượng sản phẩm nhỏ hơn 100, tiếp tục cào dữ liệu cho {store}.")
-
-                # Cào thêm dữ liệu
-                while len(products) < 100:
-                    print(f"Hiện tại có {len(products)} sản phẩm. Cào thêm...")
-
-                    # Tiến hành cào thêm sản phẩm (cào thêm từ trang tiếp theo)
-                    additional_products = scraper.parse()  # Cào thêm sản phẩm
-                    products.extend(additional_products)  # Thêm sản phẩm mới vào danh sách
-
-                    # Nếu không còn sản phẩm để cào, thoát khỏi vòng lặp
-                    if len(additional_products) == 0:
-                        break
-
-                    # Giới hạn chỉ lấy 100 sản phẩm
-                    if len(products) > 100:
-                        products = products[:100]  # Cắt số sản phẩm còn lại nếu vượt quá 100
+            # # 6. Kiểm tra số lượng sản phẩm, nếu ít hơn 100 thì tiếp tục cào thêm
+            # if len(products) < 100:
+            #     print(f"Số lượng sản phẩm nhỏ hơn 100, tiếp tục cào dữ liệu cho {store}.")
+            #
+            #     # Cào thêm dữ liệu
+            #     while len(products) < 100:
+            #         print(f"Hiện tại có {len(products)} sản phẩm. Cào thêm...")
+            #
+            #         # Tiến hành cào thêm sản phẩm (cào thêm từ trang tiếp theo)
+            #         additional_products = scraper.parse()  # Cào thêm sản phẩm
+            #         products.extend(additional_products)  # Thêm sản phẩm mới vào danh sách
+            #
+            #         # Nếu không còn sản phẩm để cào, thoát khỏi vòng lặp
+            #         if len(additional_products) == 0:
+            #             break
+            #
+            #         # Giới hạn chỉ lấy 100 sản phẩm
+            #         if len(products) > 100:
+            #             products = products[:100]  # Cắt số sản phẩm còn lại nếu vượt quá 100
 
             current_time = datetime.datetime.now().strftime("%Y-%m-%d")
             # 6. Lưu trữ dữ liệu dưới dạng file csv
