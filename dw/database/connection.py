@@ -1,5 +1,3 @@
-import mysql.connector
-
 import mysql.connector as connector
 from dotenv import load_dotenv
 import os
@@ -12,17 +10,22 @@ class DBConnection:
         Initialize a new instance of DBConnection class.
         Returns: 
         """
+        self.connection = None
+        self.database_name = None
 
     def get_connection(self):
+        """
+                Thiết lập kết nối với cơ sở dữ liệu MySQL.
+        """
         load_dotenv()
-        HOST = os.getenv('HOST')
-        USERNAME = os.getenv('ACCOUNT')
-        PASSWORD = os.getenv('PASSWORD')
+        host = os.getenv('HOST')
+        username = os.getenv('ACCOUNT')
+        password = os.getenv('PASSWORD')
 
         db = connector.connect(
-            host="localhost",
-            user="root",
-            password="1234",
+            host=host,
+            user=username,
+            password=password,
             allow_local_infile=True
         )
         # check connection is established
@@ -36,5 +39,13 @@ class DBConnection:
             return None
 
     def close_connection(self):
-        self.db.close()
-        print(f"MySQL database {self.database_name} connection closed")
+        # self.db.close()
+        # print(f"MySQL database {self.database_name} connection closed")
+        """
+            Đóng kết nối cơ sở dữ liệu.
+        """
+        if self.connection and self.connection.is_connected():
+            self.connection.close()
+            print(f"MySQL database connection closed")
+        else:
+            print("No active database connection to close.")

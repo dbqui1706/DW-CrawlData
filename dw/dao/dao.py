@@ -1,5 +1,5 @@
 from abc import ABC
-from database.connection import DBConnection
+from dw.database.connection import DBConnection
 
 
 class DaoConfiguration:
@@ -7,7 +7,7 @@ class DaoConfiguration:
         self.connection = db.get_connection()
 
     def close(self):
-        self.db.close()
+        self.connection.close()
 
     def get_configurations(self):
         # Lấy ra các config
@@ -200,5 +200,21 @@ class DaoConfiguration:
         except Exception as e:
             print(f"Error in get_configuration_by_id(): {e}")
             return None
+        finally:
+            cursor.close()
+
+    def insert_log_from_config(self):
+        """
+        Gọi thủ tục control.insert_log_from_config để chèn log từ cấu hình.
+        """
+        cursor = self.connection.cursor(dictionary=True)
+        try:
+            procedure_name = "control.insert_log_from_config"
+            cursor.callproc(procedure_name)
+            self.connection.commit()
+            print("Thủ tục insert_log_from_config đã được gọi thành công.")
+        except Exception as e:
+            print(f"Lỗi trong insert_log_from_config(): {e}")
+            self.connection.rollback()
         finally:
             cursor.close()

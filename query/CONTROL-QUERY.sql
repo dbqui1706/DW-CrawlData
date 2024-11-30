@@ -1,8 +1,8 @@
-CREATE DATABASE control;
+CREATE DATABASE IF NOT EXISTS control;
 
 -- CONTROLLER DATABASE
 -- Tạo bảng config file
-DROP TABLE control.tb_config_file;
+-- DROP TABLE IF EXISTS control.tb_config_file;
 CREATE TABLE IF NOT EXISTS control.tb_config_file(
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'ID duy nhất cho mỗi bản ghi cấu hình tệp',
     store CHAR(20) NOT NULL UNIQUE COMMENT 'Tên mô tả của cửa hàng laptop',
@@ -15,16 +15,37 @@ CREATE TABLE IF NOT EXISTS control.tb_config_file(
 );
 
 -- INSERT dữ liệu vào config file
-INSERT INTO control.tb_config_file (store, source, source_folder_location, dest_tb_staging, dest_tb_dw) VALUES 
-('PV', 'https://phongvu.vn/sitemap_collection_products_4-laptop.xml', 'D:\\dw\\data\\pv', 'staging.tb_staging', 'dw.dim_product'),
-('FPT', 'https://fptshop.com.vn/products/sitemap-may-tinh-xach-tay.xml', 'D:\\dw\\data\\fpt', 'staging.tb_staging', 'dw.dim_product');
+-- INSERT INTO control.tb_config_file (store, source, source_folder_location, dest_tb_staging, dest_tb_dw) VALUES 
+-- ('PV', 'https://phongvu.vn/sitemap_collection_products_4-laptop.xml', 'D:\\dw\\data\\pv', 'staging.tb_staging', 'dw.dim_product'),
+-- ('FPT', 'https://fptshop.com.vn/products/sitemap-may-tinh-xach-tay.xml', 'D:\\dw\\data\\fpt', 'staging.tb_staging', 'dw.dim_product');
+INSERT INTO
+    control.tb_config_file (store, source, source_folder_location, dest_tb_staging, dest_tb_dw)
+select 
+        'PV', 'https://phongvu.vn/sitemap_collection_products_4-laptop.xml', 'D:\\dw\\data\\pv', 'staging.tb_staging_pv', 'dw.dim_product'
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM control.tb_config_file
+    WHERE store = 'PV'
+);    
 
-DROP TABLE control.tb_log;
+INSERT INTO
+    control.tb_config_file (store, source, source_folder_location, dest_tb_staging, dest_tb_dw)
+select 
+        'FPT', 'https://fptshop.com.vn/products/sitemap-may-tinh-xach-tay.xml', 'D:\\dw\\data\\fpt', 'staging.tb_staging_fpt', 'dw.dim_product'
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM control.tb_config_file
+    WHERE store = 'FPT'
+);    
+
+-- DROP TABLE IF EXISTS control.tb_log;
 CREATE TABLE IF NOT EXISTS control.tb_log(
 	id int primary key auto_increment,
 	id_config int not null,
     file_name varchar(200) NOT NULL default 'STORE_YYYY-MM-DD',
-	status_code char(100) null default 'ER',
+	status_code char(100) not null default 'ER',
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_config) REFERENCES control.tb_config_file(id)
 );
@@ -34,10 +55,11 @@ SET GLOBAL local_infile = 1;
 
 -- PROCEDURES
 -- 1. LẤY RA CÁC CONFIG 
+DROP PROCEDURE IF EXISTS control.get_configurations;
 DELIMITER $$
 CREATE PROCEDURE control.get_configurations()
 BEGIN
-	SELECT l.id, l.id_config, c.store, l.status_code, l.created_at, c.source_folder_location, 
+	SELECT l.id, l.id_config, c.source,c.store, l.status_code, l.created_at, c.source_folder_location, 
 	c.dest_tb_dw, c.dest_tb_staging, l.file_name
 	FROM control.tb_config_file c 
 	JOIN control.tb_log l on c.id = l.id_config
@@ -48,10 +70,11 @@ END $$
 
 DELIMITER ;
 
-call control.get_configurations();
+-- call control.get_configurations();
 
-2. Tạo một stored procedure tự động chèn một bản ghi vào bảng
+-- 2. Tạo một stored procedure tự động chèn một bản ghi vào bảng
 -- control.tb_log cho mỗi dòng dữ liệu trong bảng control.tb_config_file
+DROP PROCEDURE IF EXISTS control.insert_log_from_config;
 DELIMITER $$
 
 CREATE PROCEDURE control.insert_log_from_config()
@@ -93,10 +116,11 @@ END $$
 
 DELIMITER ;
 
-DROP PROCEDURE control.insert_log_from_config;
-CALL control.insert_log_from_config();
+-- DROP PROCEDURE control.insert_log_from_config;
+-- CALL control.insert_log_from_config();
 
 -- 3. Tạo procedure update status code cho bảng control.tb_log
+DROP PROCEDURE IF EXISTS control.update_status_code;
 DELIMITER $$
 CREATE PROCEDURE control.update_status_code(
 	IN id_log int,
@@ -107,6 +131,6 @@ BEGIN
     SET status_code = in_status_code
     WHERE id = id_log;
 END $$
-select * from control.tb_log;
-CALL control.update_status_code(3, 'ER');
-CALL control.update_status_code(4, 'ER');
+-- select * from control.tb_log;
+-- CALL control.update_status_code(3, 'ER');
+-- CALL control.update_status_code(4, 'ER');
