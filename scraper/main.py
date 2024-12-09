@@ -70,19 +70,22 @@ def main():
             #         if len(products) > 100:
             #             products = products[:100]  # Cắt số sản phẩm còn lại nếu vượt quá 100
 
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d")
-            # 6. Lưu trữ dữ liệu dưới dạng file csv
-            file_name = os.path.join(source_folder, f"{store.upper()}_{current_time}.csv")
             # api.update_filename_control.tb_log(file_name)
 
-            # 7. Update status = LR
-            api.update_status_code(id=config['id'], status='LR')
+            # 7.1 Update status = EF nếu extract fail
+            if len(products) == 0 or products is None:
+                api.update_status_code(id=config['id'], status='EF')
+                continue
 
-            # 8. Lưu file CSV vào folder
+            # 6. Lưu trữ dữ liệu dưới dạng file csv
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d")
+            file_name = os.path.join(source_folder, f"{store.upper()}_{current_time}.csv")
             writer = CSVWriter()
             os.makedirs(source_folder, exist_ok=True)
             writer.write_to_csv(products, file_name)
 
+            # 7. Update status = LR nếu extract thành công
+            api.update_status_code(id=config['id'], status='LR')
             # Đóng scraper
             scraper.close()
 

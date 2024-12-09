@@ -1,7 +1,7 @@
 import mysql.connector as connector
 from dotenv import load_dotenv
 import os
-from utils.utils import send_email
+from dw.utils.utils import send_email
 
 
 class DBConnection:
