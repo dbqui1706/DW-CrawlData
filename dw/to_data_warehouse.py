@@ -20,8 +20,9 @@ def main(args: argparse.Namespace):
     global email
     email = os.getenv("EMAIL")
     if args.is_single == 0:
-        # 2. Duyệt for lấy từng config
+        # 2. Lấy ra tất cả các configs
         configs = api.get_configurations()
+        # 3. Duyệt for lấy từng config
         for config in configs:
             print(f"Parsing config: {config['id']}")
             tranform_process(api, config)
@@ -50,34 +51,35 @@ def tranform_process(api: DaoConfiguration, config):
         config (dict): config cần xử lý
     Returns: None
     """
-    # 3. Kiểm tra status của config = TR (transform ready)
+    # 4. Kiểm tra status của config = TR (transform ready)
     if api.get_status_code(config) != 'TR':
         return
-    # 4. Load data từ staging vào data warehouse
+    # 5. Load data từ staging vào data warehouse
     print(
         f"Transforming data from {config['dest_tb_staging']} to {config['dest_tb_dw']}")
     if api.transform_data_to_dw(config) is False:
         print(f"Error in transform_data_to_dw() with config {config['id']}")
 
-        # Cập nhật status code = 'EF' nếu lỗi
+        # 6. Cập nhật status code = 'EF' nếu lỗi
         api.update_status_code("EF", config['id'])
-        # Gửi email thông báo lỗi
+        # 7. Gửi email thông báo lỗi
         send_email(email, config['id'], 'DATA WAREHOUSE',
                    f"Error in transform_data_to_dw() with config {config['id']}")
         return
 
-    # 5. Load data vào fact table
+    # 8. Load data vào fact table
     print(f"Loading data to fact table")
     if api.load_data_to_fact(config) is False:
         print(f"Error in load_data_to_fact() with config {config['id']}")
 
-        # Cập nhật status code = 'EF' nếu lỗi
+        # 9. Cập nhật status code = 'EF' nếu lỗi
         api.update_status_code("EF", config['id'])
+        # 10. Gửi email thông báo lỗi
         send_email(email, config['id'], 'DATA WAREHOUSE',
                    f"Error in load_data_to_fact() with config {config['id']}")
         return
 
-    # 6. Cập nhật status code = 'TS' nếu thành công
+    # 11. Cập nhật status code = 'TS' nếu thành công
     api.update_status_code("TS", config['id'])
     print(f"Transform config {config['id']} successfully")
 

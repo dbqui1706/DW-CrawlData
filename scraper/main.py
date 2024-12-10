@@ -41,47 +41,24 @@ def main():
 
             if store == 'PV':
                 scraper = PhongVuScraper(urls=urls)
-                products = scraper.parse()
             elif store == 'FPT':
                 scraper = FPTScraper(urls=urls)
-                products = scraper.parse()
 
-            # Nếu không có sản phẩm, tiếp tục với config tiếp theo
+            products = scraper.parse()
+            # 6. Kiểm tra xem có dữ liệu không
             if len(products) == 0:
-                continue
-
-            # 6. Kiểm tra số lượng sản phẩm, nếu ít hơn 100 thì tiếp tục cào thêm
-            if len(products) < 100:
-                print(f"Số lượng sản phẩm nhỏ hơn 100, tiếp tục cào dữ liệu cho {store}.")
-
-                # Cào thêm dữ liệu
-                while len(products) < 100:
-                    print(f"Hiện tại có {len(products)} sản phẩm. Cào thêm...")
-
-                    # Tiến hành cào thêm sản phẩm (cào thêm từ trang tiếp theo)
-                    additional_products = scraper.parse()  # Cào thêm sản phẩm
-                    products.extend(additional_products)  # Thêm sản phẩm mới vào danh sách
-
-                    # Nếu không còn sản phẩm để cào, thoát khỏi vòng lặp
-                    if len(additional_products) == 0:
-                        break
-
-                    # Giới hạn chỉ lấy 100 sản phẩm
-                    if len(products) > 100:
-                        products = products[:100]  # Cắt số sản phẩm còn lại nếu vượt quá 100
+                api.update_status_code(id=config['id'], status='EF')
 
             current_time = datetime.datetime.now().strftime("%Y-%m-%d")
-            # 6. Lưu trữ dữ liệu dưới dạng file csv
-            file_name = os.path.join(source_folder, f"{store.upper()}_{current_time}.csv")
-            # api.update_filename_control.tb_log(file_name)
-
-            # 7. Update status = LR
-            api.update_status_code(id=config['id'], status='LR')
-
-            # 8. Lưu file CSV vào folder
+            # 7. Lưu trữ dữ liệu dưới dạng file csv
+            file_name = os.path.join(
+                source_folder, f"{store.upper()}_{current_time}.csv")
             writer = CSVWriter()
             os.makedirs(source_folder, exist_ok=True)
             writer.write_to_csv(products, file_name)
+
+            # 8. Update status = LR
+            api.update_status_code(id=config['id'], status='LR')
 
             # Đóng scraper
             scraper.close()
